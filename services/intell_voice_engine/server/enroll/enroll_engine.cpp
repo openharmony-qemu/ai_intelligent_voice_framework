@@ -164,7 +164,9 @@ int32_t EnrollEngine::Detach(void)
     }
 
     if (enrollResult_.load() == 0) {
+#ifndef QEMU_CPU_VOICE_PROVIDER
         EngineUtil::ProcDspModel(ReadDspModel(OHOS::HDI::IntelligentVoice::Engine::V1_0::DSP_MODLE));
+#endif
         HistoryInfoMgr::GetInstance().SetStringKVPair(KEY_WAKEUP_PHRASE, wakeupPhrase_);
         /* save new version number */
         UpdateEngineUtils::SaveWakeupVesion();

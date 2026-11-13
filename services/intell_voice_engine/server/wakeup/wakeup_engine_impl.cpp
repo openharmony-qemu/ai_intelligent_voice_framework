@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 #include "wakeup_engine_impl.h"
+#ifdef QEMU_CPU_VOICE_PROVIDER
+#include "accesstoken_kit.h"
+#endif
 
 #include "audio_asr.h"
 #include "audio_system_manager.h"
@@ -63,7 +66,11 @@ WakeupEngineImpl::WakeupEngineImpl() : ModuleStates(State(IDLE), "WakeupEngineIm
     capturerOptions_.streamInfo.encoding = AudioEncodingType::ENCODING_PCM;
     capturerOptions_.streamInfo.format = AudioSampleFormat::SAMPLE_S16LE;
     capturerOptions_.streamInfo.channels = AudioChannel::MONO;
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    capturerOptions_.capturerInfo.sourceType = SourceType::SOURCE_TYPE_VOICE_RECOGNITION;
+#else
     capturerOptions_.capturerInfo.sourceType = SourceType::SOURCE_TYPE_WAKEUP;
+#endif
     capturerOptions_.capturerInfo.capturerFlags = 0;
     adapterListener_ = std::make_shared<WakeupAdapterListener>(
         std::bind(&WakeupEngineImpl::OnWakeupEvent, this, std::placeholders::_1));
@@ -76,6 +83,27 @@ WakeupEngineImpl::WakeupEngineImpl() : ModuleStates(State(IDLE), "WakeupEngineIm
 WakeupEngineImpl::~WakeupEngineImpl()
 {
 }
+
+
+#ifdef QEMU_CPU_VOICE_PROVIDER
+bool WakeupEngineImpl::CpuPermission() const
+{
+    uint32_t token = cpuToken_.load();
+    using OHOS::Security::AccessToken::AccessTokenKit;
+    using OHOS::Security::AccessToken::PermissionState;
+    return token != 0 && AccessTokenKit::VerifyAccessToken(token, "ohos.permission.MICROPHONE") == PermissionState::PERMISSION_GRANTED &&
+        AccessTokenKit::VerifyAccessToken(token, "ohos.permission.MANAGE_INTELLIGENT_VOICE") == PermissionState::PERMISSION_GRANTED;
+}
+int32_t WakeupEngineImpl::StartCpuListening(State &nextState)
+{
+    if (!cpuListener_.load() || !CpuPermission() || adapter_ == nullptr) return -1;
+    channelId_ = 0;
+    StartInfo info = { .isLast = true };
+    if (adapter_->Start(info) != 0) return -1;
+    if (!StartAudioSource()) { adapter_->Stop(); return -1; }
+    cpuRevoked_.store(false); nextState = State(RECOGNIZING); return 0;
+}
+#endif
 
 bool WakeupEngineImpl::InitStates()
 {
@@ -308,7 +336,11 @@ void WakeupEngineImpl::DestroyWakeupSourceStopCallback()
 
 bool WakeupEngineImpl::StartAudioSource()
 {
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    capturerOptions_.streamInfo.channels = AudioChannel::MONO;
+#else
     capturerOptions_.streamInfo.channels = GetWakeupSourceChannel();
+#endif
     auto listener = std::make_unique<AudioSourceListener>(
         [&](uint8_t *buffer, uint32_t size, bool isEnd) {
             ReadBufferCallback(buffer, size, isEnd);
@@ -360,6 +392,9 @@ void WakeupEngineImpl::StopAudioSource()
 void WakeupEngineImpl::OnWakeupEvent(
     const OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineCallBackEvent &event)
 {
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    if (event.msgId == INTELL_VOICE_ENGINE_MSG_RECOGNIZE_COMPLETE && (!cpuListener_.load() || !CpuPermission())) return;
+#endif
     if (event.msgId == INTELL_VOICE_ENGINE_MSG_INIT_DONE) {
         TaskExecutor::AddAsyncTask([this, result = event.result]() { OnInitDone(result); },
             "WakeupEngineImpl::InitDone", false);
@@ -381,6 +416,9 @@ void WakeupEngineImpl::OnInitDone(int32_t result)
 
 void WakeupEngineImpl::OnWakeupRecognition(int32_t result, const std::string &info)
 {
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    if (!cpuListener_.load() || !CpuPermission()) return;
+#endif
     INTELL_VOICE_LOG_INFO("on wakeup recognition, result:%{public}d", result);
     OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineCallBackEvent event;
     event.msgId = INTELL_VOICE_ENGINE_MSG_RECOGNIZE_COMPLETE;
@@ -476,10 +514,13 @@ int32_t WakeupEngineImpl::HandleInitDone(const StateMsg &msg, State &nextState)
     }
 
     nextState = State(INITIALIZED);
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    if (cpuListener_.load()) return StartCpuListening(nextState);
+#endif
     return 0;
 }
 
-int32_t WakeupEngineImpl::HandleSetListener(const StateMsg &msg, State & /* nextState */)
+int32_t WakeupEngineImpl::HandleSetListener(const StateMsg &msg, State &nextState)
 {
     SetListenerMsg *listenerMsg = reinterpret_cast<SetListenerMsg *>(msg.inMsg);
     if (listenerMsg == nullptr || adapterListener_ == nullptr) {
@@ -488,6 +529,11 @@ int32_t WakeupEngineImpl::HandleSetListener(const StateMsg &msg, State & /* next
     }
 
     adapterListener_->SetCallback(listenerMsg->callback);
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    cpuListener_.store(listenerMsg->callback != nullptr);
+    if (!cpuListener_.load()) { StopAudioSource(); EngineUtil::Stop(); nextState = State(INITIALIZED); }
+    else if (CurrState() == State(INITIALIZED)) return StartCpuListening(nextState);
+#endif
     return 0;
 }
 
@@ -629,6 +675,9 @@ int32_t WakeupEngineImpl::HandleStopCapturer(const StateMsg & /* msg */, State &
             INTELL_VOICE_PERMISSION_STOP);
     }
     nextState = State(INITIALIZED);
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    if (cpuListener_.load() && CpuPermission()) return StartCpuListening(nextState);
+#endif
     return 0;
 }
 
@@ -638,6 +687,9 @@ int32_t WakeupEngineImpl::HandleRecognizingTimeout(const StateMsg & /* msg */, S
     StopAudioSource();
     EngineUtil::Stop();
     nextState = State(INITIALIZED);
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    if (cpuListener_.load() && CpuPermission()) return StartCpuListening(nextState);
+#endif
     return 0;
 }
 
@@ -693,6 +745,9 @@ int32_t WakeupEngineImpl::HandleResetAdapter(const StateMsg & /* msg */, State &
 
 int32_t WakeupEngineImpl::HandleRelease(const StateMsg & /* msg */, State &nextState)
 {
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    cpuListener_.store(false); cpuToken_.store(0);
+#endif
     DestroyWakeupSourceStopCallback();
     StopAudioSource();
     if (CurrState() == State(READ_CAPTURER)) {
@@ -731,6 +786,9 @@ void WakeupEngineImpl::SetWakeupModel()
 
 void WakeupEngineImpl::UpdateDspModel()
 {
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    return; // CPU models are normal installed immutable product assets.
+#endif
     auto ret = EngineCallbackMessage::CallFunc(QUERY_SWITCH_STATUS, SHORTWORD_KEY);
     bool switchstatus = false;
     if (ret.has_value()) {
@@ -798,6 +856,15 @@ std::string WakeupEngineImpl::GetWakeupPhrase()
 
 void WakeupEngineImpl::ReadBufferCallback(uint8_t *buffer, uint32_t size, bool isEnd)
 {
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    if (!cpuListener_.load() || !CpuPermission()) {
+        if (!cpuRevoked_.exchange(true)) {
+            cpuListener_.store(false);
+            TaskExecutor::AddAsyncTask([this]() { StateMsg stop(STOP_RECOGNIZE); Handle(stop); }, "CpuVoicePermissionRevoked", false);
+        }
+        return;
+    }
+#endif
     std::vector<std::vector<uint8_t>> audioData;
     auto ret = IntellVoiceUtil::DeinterleaveAudioData(reinterpret_cast<int16_t *>(buffer),
         size / sizeof(int16_t), static_cast<int32_t>(capturerOptions_.streamInfo.channels), audioData);

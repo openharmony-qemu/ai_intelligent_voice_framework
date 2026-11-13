@@ -16,6 +16,9 @@
 #define WAKEUP_ENGINE_IMPL_H
 
 #include <memory>
+#ifdef QEMU_CPU_VOICE_PROVIDER
+#include <atomic>
+#endif
 #include <string>
 #include "v1_0/iintell_voice_engine_callback.h"
 #include "audio_info.h"
@@ -45,6 +48,9 @@ public:
     WakeupEngineImpl();
     ~WakeupEngineImpl();
     int32_t Handle(const StateMsg &msg);
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    void SetCpuCallerToken(uint32_t token) { cpuToken_.store(token); }
+#endif
 
 private:
     enum EngineState {
@@ -58,6 +64,13 @@ private:
 
 private:
     bool SetCallbackInner();
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    bool CpuPermission() const;
+    int32_t StartCpuListening(State &nextState);
+    std::atomic<uint32_t> cpuToken_{0};
+    std::atomic<bool> cpuListener_{false};
+    std::atomic<bool> cpuRevoked_{false};
+#endif
     int32_t AttachInner(const IntellVoiceEngineInfo &info);
     bool StartAudioSource();
     void StopAudioSource();

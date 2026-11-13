@@ -13,9 +13,14 @@
 
 import("//build/ohos.gni")
 import("../../intell_voice_service.gni")
+config("qemu_cpu_voice") {
+  if (intelligent_voice_framework_qemu_cpu_provider) {
+    defines = [ "QEMU_CPU_VOICE_PROVIDER" ]
+  }
+}
 
 ohos_source_set("engine_source") {
-  configs = [ "//build/config/compiler:exceptions" ]
+  configs = [ ":qemu_cpu_voice", "//build/config/compiler:exceptions" ]
   if (intelligent_voice_framework_engine_enable) {
     sources = [
       "server/base/adapter_callback_service.cpp",
@@ -177,6 +182,9 @@ ohos_source_set("engine_source") {
   }
 
   deps = [ "../../utils:intell_voice_utils" ]
+  if (intelligent_voice_framework_qemu_cpu_provider) {
+    external_deps += [ "access_token:libaccesstoken_sdk" ]
+  }
 
   sanitize = {
     cfi = true

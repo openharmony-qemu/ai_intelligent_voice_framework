@@ -1,107 +1,110 @@
 {
-    "name": "@ohos/intelligent_voice_framework",
-    "description": "intelligent_voice framework",
-    "version": "4.0",
-    "license": "Apache License 2.0",
-    "publishAs": "code-segment",
-    "segment": {
-      "destPath": "foundation/ai/intelligent_voice_framework"
-    },    
-    "component": {
-        "name": "intelligent_voice_framework",
-        "subsystem": "ai",
-        "syscap": [ 
-            "SystemCapability.AI.IntelligentVoice.Core"
-        ],
-        "adapted_system_type": ["standard"],
-        "rom": "675KB",
-        "ram": "7680KB",
-        "deps": {
-            "components": [
-                "ability_base",
-                "ability_runtime",
-                "access_token",
-                "c_utils",
-                "common_event_service",
-                "data_share",
-                "drivers_interface_intelligent_voice",
-                "hdf_core",
-                "hilog",
-                "image_framework",
-                "ipc",
-                "kv_store",
-                "audio_framework",
-                "napi",
-                "relational_store",
-                "safwk",
-                "samgr",
-                "state_registry",
-                "core_service",
-                "call_manager",
-                "huks",
-                "jsoncpp",
-                "power_manager",
-                "window_manager",
-                "ffrt",
-                "runtime_core",
-                "eventhandler"
+  "name": "@ohos/intelligent_voice_framework",
+  "description": "intelligent_voice framework",
+  "version": "4.0",
+  "license": "Apache License 2.0",
+  "publishAs": "code-segment",
+  "segment": {
+    "destPath": "foundation/ai/intelligent_voice_framework"
+  },
+  "component": {
+    "name": "intelligent_voice_framework",
+    "subsystem": "ai",
+    "syscap": [
+      "SystemCapability.AI.IntelligentVoice.Core"
+    ],
+    "adapted_system_type": [
+      "standard"
+    ],
+    "rom": "675KB",
+    "ram": "7680KB",
+    "deps": {
+      "components": [
+        "ability_base",
+        "ability_runtime",
+        "access_token",
+        "c_utils",
+        "common_event_service",
+        "data_share",
+        "drivers_interface_intelligent_voice",
+        "hdf_core",
+        "hilog",
+        "image_framework",
+        "ipc",
+        "kv_store",
+        "audio_framework",
+        "napi",
+        "relational_store",
+        "safwk",
+        "samgr",
+        "state_registry",
+        "core_service",
+        "call_manager",
+        "huks",
+        "jsoncpp",
+        "power_manager",
+        "window_manager",
+        "ffrt",
+        "runtime_core",
+        "eventhandler"
+      ]
+    },
+    "features": [
+      "intelligent_voice_framework_trigger_enable",
+      "intelligent_voice_framework_engine_enable",
+      "intelligent_voice_framework_only_first_stage",
+      "intelligent_voice_framework_only_second_stage",
+      "intelligent_voice_framework_window_manager_enable",
+      "intelligent_voice_framework_power_manager_enable",
+      "intelligent_voice_framework_first_stage_oneshot_enable",
+      "intelligent_voice_framework_qemu_cpu_provider"
+    ],
+    "build": {
+      "sub_component": [
+        "//foundation/ai/intelligent_voice_framework/services/intell_voice_service:intell_voice_server",
+        "//foundation/ai/intelligent_voice_framework/services/intell_voice_trigger:intelligentvoice_trigger",
+        "//foundation/ai/intelligent_voice_framework/services/intell_voice_engine:intelligentvoice_engine",
+        "//foundation/ai/intelligent_voice_framework/services:intell_voice_proxy",
+        "//foundation/ai/intelligent_voice_framework/services/etc:intell_voice_service.rc",
+        "//foundation/ai/intelligent_voice_framework/frameworks/js:intelligentvoice",
+        "//foundation/ai/intelligent_voice_framework/frameworks/js:intelligentvoice_js",
+        "//foundation/ai/intelligent_voice_framework/frameworks/native:intellvoice_native",
+        "//foundation/ai/intelligent_voice_framework/sa_profile:intell_voice_service_sa_profile",
+        "//foundation/ai/intelligent_voice_framework/utils:intell_voice_utils",
+        "//foundation/ai/intelligent_voice_framework/frameworks/taihe:intelligent_voice_framework_taihe",
+        "//foundation/ai/intelligent_voice_framework/frameworks/taihe:intelligent_voice_framework_taihe_gen_only"
+      ],
+      "inner_kits": [
+        {
+          "type": "none",
+          "name": "//foundation/ai/intelligent_voice_framework/frameworks/js:intelligentvoice_js",
+          "header": {
+            "header_files": [
+              "intell_voice_manager_napi.h",
+              "intell_voice_engine_napi.h",
+              "enroll_intell_voice_engine_napi.h"
+            ],
+            "header_base": [
+              "//foundation/ai/intelligent_voice_framework/frameworks/js/napi/include"
             ]
+          }
         },
-        "features": [
-          "intelligent_voice_framework_trigger_enable",
-          "intelligent_voice_framework_engine_enable",
-          "intelligent_voice_framework_only_first_stage",
-          "intelligent_voice_framework_only_second_stage",
-          "intelligent_voice_framework_window_manager_enable",
-          "intelligent_voice_framework_power_manager_enable",
-          "intelligent_voice_framework_first_stage_oneshot_enable"
-        ],
-        "build": {
-            "sub_component": [
-                "//foundation/ai/intelligent_voice_framework/services/intell_voice_service:intell_voice_server",
-                "//foundation/ai/intelligent_voice_framework/services/intell_voice_trigger:intelligentvoice_trigger",
-                "//foundation/ai/intelligent_voice_framework/services/intell_voice_engine:intelligentvoice_engine",
-                "//foundation/ai/intelligent_voice_framework/services:intell_voice_proxy",
-                "//foundation/ai/intelligent_voice_framework/services/etc:intell_voice_service.rc",
-                "//foundation/ai/intelligent_voice_framework/frameworks/js:intelligentvoice",
-                "//foundation/ai/intelligent_voice_framework/frameworks/js:intelligentvoice_js",
-                "//foundation/ai/intelligent_voice_framework/frameworks/native:intellvoice_native",
-                "//foundation/ai/intelligent_voice_framework/sa_profile:intell_voice_service_sa_profile",
-                "//foundation/ai/intelligent_voice_framework/utils:intell_voice_utils",
-		            "//foundation/ai/intelligent_voice_framework/frameworks/taihe:intelligent_voice_framework_taihe",
-                "//foundation/ai/intelligent_voice_framework/frameworks/taihe:intelligent_voice_framework_taihe_gen_only"
+        {
+          "type": "none",
+          "name": "//foundation/ai/intelligent_voice_framework/frameworks/native:intellvoice_native",
+          "header": {
+            "header_files": [
+              "intell_voice_manager.h",
+              "i_headset_wakeup.h",
+              "wakeup_intell_voice_engine.h"
             ],
-            "inner_kits": [
-                {
-                  "type": "none",
-                  "name": "//foundation/ai/intelligent_voice_framework/frameworks/js:intelligentvoice_js",
-                  "header": {
-                    "header_files": [
-                      "intell_voice_manager_napi.h",
-                      "intell_voice_engine_napi.h",
-                      "enroll_intell_voice_engine_napi.h"
-                    ],
-                    "header_base": [
-                      "//foundation/ai/intelligent_voice_framework/frameworks/js/napi/include"
-                    ]
-                  }
-                },
-                {
-                  "type": "none",
-                  "name": "//foundation/ai/intelligent_voice_framework/frameworks/native:intellvoice_native",
-                  "header": {
-                    "header_files": [
-                      "intell_voice_manager.h",
-                      "i_headset_wakeup.h",
-                      "wakeup_intell_voice_engine.h"
-                    ],
-                    "header_base": "//foundation/ai/intelligent_voice_framework/interfaces/inner_api/native"
-                  }
-                }
-            ],
-            "test": [
-              "//foundation/ai/intelligent_voice_framework/tests:intell_voice_fuzz_test"
-            ]
+            "header_base": "//foundation/ai/intelligent_voice_framework/interfaces/inner_api/native"
+          }
         }
+      ],
+      "test": [
+        "//foundation/ai/intelligent_voice_framework/tests:intell_voice_fuzz_test"
+      ]
     }
+  }
 }

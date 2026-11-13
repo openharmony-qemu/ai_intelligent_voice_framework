@@ -13,9 +13,14 @@
 
 import("//build/ohos.gni")
 import("../../intell_voice_service.gni")
+config("qemu_cpu_voice") {
+  if (intelligent_voice_framework_qemu_cpu_provider) {
+    defines = [ "QEMU_CPU_VOICE_PROVIDER" ]
+  }
+}
 
 ohos_source_set("server_source") {
-  configs = [ "//build/config/compiler:exceptions" ]
+  configs = [ ":qemu_cpu_voice", "//build/config/compiler:exceptions" ]
 
   sources = [
     "server/sa/intell_voice_engine_registrar.cpp",

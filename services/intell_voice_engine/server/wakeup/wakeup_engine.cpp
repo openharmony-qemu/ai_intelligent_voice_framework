@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 #include "wakeup_engine.h"
+#ifdef QEMU_CPU_VOICE_PROVIDER
+#include "ipc_skeleton.h"
+#endif
 #include "idevmgr_hdi.h"
 #include "intell_voice_engine_manager.h"
 #include "intell_voice_log.h"
@@ -76,6 +79,9 @@ void WakeupEngine::SetCallback(sptr<IRemoteObject> object)
     if (callback == nullptr) {
         INTELL_VOICE_LOG_WARN("clear callback");
     }
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    ROLE(WakeupEngineImpl).SetCpuCallerToken(callback == nullptr ? 0 : IPCSkeleton::GetCallingTokenID());
+#endif
     callback_ = callback;
     SetListenerMsg listenerMsg(callback);
     StateMsg msg(SET_LISTENER, &listenerMsg, sizeof(SetListenerMsg));

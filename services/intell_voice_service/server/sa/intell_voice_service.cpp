@@ -66,6 +66,12 @@ int32_t IntellVoiceService::CreateIntellVoiceEngine(IntellVoiceEngineType type, 
         return ret;
     }
 
+#ifdef QEMU_CPU_VOICE_PROVIDER
+    ret = IntellVoiceUtil::VerifySystemPermission(OHOS_MICROPHONE_PERMISSION);
+    if (ret != INTELLIGENT_VOICE_SUCCESS) {
+        return ret;
+    }
+#endif
     inst = ServiceManagerType::GetInstance().HandleCreateEngine(type);
     if (inst == nullptr) {
         INTELL_VOICE_LOG_ERROR("engine is nullptr");

@@ -12,6 +12,7 @@
 # limitations under the License.
 
 declare_args() {
+  intelligent_voice_framework_qemu_cpu_provider = false
   telephony_service_enable = false
   intelligent_voice_framework_trigger_enable = true
   intelligent_voice_framework_engine_enable = true
